@@ -178,8 +178,12 @@
         
         <!-- Controls for selecting price history range -->
         <div id="controls">
-            <button id="btn1min">Last 1 Minute</button>
-            <button id="btn30days">Last 30 Days</button>
+            <div class="time-buttons">
+                <button onclick="setTimeframe('1h')">1 Hour</button>
+                <button onclick="setTimeframe('24h')">24 Hours</button>
+                <button onclick="setTimeframe('7d')">7 Days</button>
+                <button onclick="setTimeframe('30d')">30 Days</button>
+            </div>
         </div>
         
         <!-- Chart Container -->
@@ -274,25 +278,19 @@
         // Convert timestamp to a readable format.
         function formatTimestamp(timestamp, range) {
             const date = new Date(timestamp);
-            // For a 1min view, show time; for 30days, show date.
-            return range === "1min" ? date.toLocaleTimeString() : date.toLocaleDateString();
+            // Show date for all views
+            return date.toLocaleDateString();
         }
 
         // Load price history data and render/update the Chart.js line chart.
         async function loadPriceHistory(range, isUpdate = false) {
             // Only update button styles if it's not an auto-update
             if (!isUpdate) {
-                document.getElementById('btn1min').classList.remove('active');
-                document.getElementById('btn30days').classList.remove('active');
-                if (range === "1min") {
-                    document.getElementById('btn1min').classList.add('active');
-                } else {
-                    document.getElementById('btn30days').classList.add('active');
-                }
+                document.getElementById('btn30days').classList.add('active');
                 currentRange = range; // Save the current selected range for auto-refresh
             }
             
-            let daysParam = (range === "1min") ? "0.001" : "30";
+            let daysParam = "30";
             const url = `https://api.coingecko.com/api/v3/coins/shiba-inu/market_chart?vs_currency=usd&days=${daysParam}`;
             try {
                 const response = await fetch(url);
@@ -382,9 +380,6 @@
         }
 
         // Set up event listeners for the buttons.
-        document.getElementById('btn1min').addEventListener('click', () => {
-            loadPriceHistory("1min", false);
-        });
         document.getElementById('btn30days').addEventListener('click', () => {
             loadPriceHistory("30days", false);
         });
@@ -401,6 +396,24 @@
         setInterval(() => {
             loadPriceHistory(currentRange, true);
         }, 60000);
+
+        function setTimeframe(timeframe) {
+            switch (timeframe) {
+                case '1h':
+                    updateInterval = 60000;
+                    break;
+                case '24h':
+                    updateInterval = 60000;
+                    break;
+                case '7d':
+                    updateInterval = 60000;
+                    break;
+                case '30d':
+                    updateInterval = 60000;
+                    break;
+            }
+            // ... existing code ...
+        }
     </script>
 </body>
 </html> 
