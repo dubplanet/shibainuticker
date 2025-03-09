@@ -271,7 +271,11 @@
         // Convert timestamp to a readable format.
         function formatTimestamp(timestamp, range) {
             const date = new Date(timestamp);
-            // Show date for all views
+            // Show time for 1h view, date for other views
+            if (range === '1h') {
+                const pad = (n) => n < 10 ? '0' + n : n;
+                return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            }
             return date.toLocaleDateString();
         }
 
