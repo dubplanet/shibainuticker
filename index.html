@@ -85,6 +85,7 @@
             <div>24h Volume: <strong id="volume24h">Loading...</strong></div>
             <div>Market Cap: <strong id="marketCap">Loading...</strong></div>
             <div>Market Position: <strong id="marketRank">Loading...</strong></div>
+            <div>Last Updated: <strong id="lastUpdate">Loading...</strong></div>
         </div>
         
         <!-- Controls for selecting price history range -->
@@ -104,29 +105,37 @@
 
         // Update the ticker information using CoinGecko's "coins/markets" endpoint.
         async function updateTicker() {
-            const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=shiba-inu&order=market_cap_desc&per_page=1&page=1&sparkline=false";
+            const url = "https://api.coingecko.com/api/v3/simple/price?ids=shiba-inu&vs_currencies=usd&include_24hr_vol=true&include_24hr_change=true&include_market_cap=true&include_last_updated_at=true";
             try {
                 const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-                if (data && data.length > 0) {
-                    const coin = data[0];
-
+                
+                if (data && data['shiba-inu']) {
+                    const coin = data['shiba-inu'];
                     // Formatting numbers for a friendly display
-                    const formatCurrency = (num) => "$" + Number(num).toLocaleString();
-                    const price = coin.current_price;
-                    const change = coin.price_change_percentage_24h;
-                    const volume = coin.total_volume;
-                    const cap = coin.market_cap;
-                    const rank = coin.market_cap_rank;
-
-                    document.getElementById('currentPrice').innerText = formatCurrency(price);
-                    document.getElementById('change24h').innerText = change.toFixed(2) + "%";
-                    document.getElementById('volume24h').innerText = formatCurrency(volume);
-                    document.getElementById('marketCap').innerText = formatCurrency(cap);
-                    document.getElementById('marketRank').innerText = rank;
+                    const formatCurrency = (num) => "$" + Number(num).toLocaleString(undefined, {minimumFractionDigits: 8, maximumFractionDigits: 8});
+                    const formatPercentage = (num) => Number(num).toFixed(2) + "%";
+                    
+                    document.getElementById('currentPrice').innerText = formatCurrency(coin.usd);
+                    document.getElementById('change24h').innerText = formatPercentage(coin.usd_24h_change || 0);
+                    document.getElementById('volume24h').innerText = formatCurrency(coin.usd_24h_vol || 0);
+                    document.getElementById('marketCap').innerText = formatCurrency(coin.usd_market_cap || 0);
+                    
+                    // Add last updated time
+                    const lastUpdated = new Date().toLocaleTimeString();
+                    document.getElementById('lastUpdate').innerText = `Last Updated: ${lastUpdated}`;
+                } else {
+                    throw new Error('Invalid data format from API');
                 }
             } catch (error) {
                 console.error("Error updating ticker:", error);
+                document.getElementById('currentPrice').innerText = "Error loading price";
+                document.getElementById('change24h').innerText = "N/A";
+                document.getElementById('volume24h').innerText = "N/A";
+                document.getElementById('marketCap').innerText = "N/A";
             }
         }
 
@@ -139,7 +148,7 @@
 
         // Load price history data and render/update the Chart.js line chart.
         async function loadPriceHistory(range) {
-            // Update active button styles.
+            // Update active button styles
             document.getElementById('btn1min').classList.remove('active');
             document.getElementById('btn30days').classList.remove('active');
             if (range === "1min") {
@@ -154,17 +163,19 @@
             const url = `https://api.coingecko.com/api/v3/coins/shiba-inu/market_chart?vs_currency=usd&days=${daysParam}`;
             try {
                 const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-                if (data && data.prices) {
+                if (data && data.prices && data.prices.length > 0) {
                     const labels = [];
                     const prices = [];
                     data.prices.forEach(point => {
-                        // point[0] is timestamp in milliseconds, point[1] is the price.
                         labels.push(formatTimestamp(point[0], range));
                         prices.push(point[1]);
                     });
     
-                    // If a chart instance exists, destroy it before creating a new one.
+                    // If a chart instance exists, destroy it before creating a new one
                     if (priceChart) {
                         priceChart.destroy();
                     }
@@ -181,12 +192,21 @@
                                 backgroundColor: 'rgba(52, 152, 219, 0.2)',
                                 borderColor: 'rgba(52, 152, 219, 1)',
                                 borderWidth: 2,
-                                pointRadius: 2,
+                                pointRadius: 1,
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Price: $' + context.parsed.y.toFixed(8);
+                                        }
+                                    }
+                                }
+                            },
                             scales: {
                                 x: {
                                     ticks: {
@@ -196,13 +216,29 @@
                                 },
                                 y: {
                                     beginAtZero: false,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '$' + value.toFixed(8);
+                                        }
+                                    }
                                 }
                             }
                         }
                     });
+                } else {
+                    throw new Error('No price data available');
                 }
             } catch (error) {
                 console.error("Error loading price history:", error);
+                if (priceChart) {
+                    priceChart.destroy();
+                    priceChart = null;
+                }
+                // Display error message on canvas
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                ctx.font = '14px Arial';
+                ctx.fillStyle = 'red';
+                ctx.fillText('Error loading price data. Please try again later.', 10, 50);
             }
         }
 
