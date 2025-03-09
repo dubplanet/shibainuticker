@@ -85,7 +85,7 @@
             <div>24h Volume: <strong id="volume24h">Loading...</strong></div>
             <div>Market Cap: <strong id="marketCap">Loading...</strong></div>
             <div>Market Position: <strong id="marketRank">Loading...</strong></div>
-            <div><strong id="lastUpdate">Loading...</strong></div>
+            <div>Last Updated: <strong id="lastUpdate">Loading...</strong></div>
         </div>
         
         <!-- Controls for selecting price history range -->
@@ -154,7 +154,7 @@
                     document.getElementById('marketRank').innerText = `#${coin.market_cap_rank || 'N/A'}`;
                     
                     // Add last updated time
-                    const now = new Date();
+                    const now = new Date(coin.last_updated || Date.now());
                     const formatDate = (date) => {
                         const pad = (n) => n < 10 ? '0' + n : n;
                         const month = pad(date.getMonth() + 1);
