@@ -424,65 +424,91 @@
         let priceChart = null;
         let currentRange = "30days";  // Default range
 
-        // Update the ticker information using CoinGecko's "coins/markets" endpoint.
+        // Update the ticker information using Binance API
         async function updateTicker() {
-            const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=shiba-inu&order=market_cap_desc&per_page=1&page=1&sparkline=false";
             try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Get current price and 24h stats
+                const [priceResponse, dayStatsResponse] = await Promise.all([
+                    fetch('https://api.binance.com/api/v3/ticker/price?symbol=SHIBUSDT', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=SHIBUSDT', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
+
+                if (!priceResponse.ok || !dayStatsResponse.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                const data = await response.json();
+
+                const priceData = await priceResponse.json();
+                const dayStats = await dayStatsResponse.json();
+
+                if (!priceData.price || !dayStats.priceChangePercent) {
+                    throw new Error('Invalid data from API');
+                }
+
+                // Formatting numbers for a friendly display
+                const formatPrice = (num) => {
+                    const price = parseFloat(num);
+                    if (isNaN(price)) return 'Error';
+                    return "$" + price.toFixed(8);
+                };
+
+                const formatLargeNumber = (num) => {
+                    const value = parseFloat(num);
+                    if (isNaN(value)) return 'Error';
+                    return "$" + Math.round(value).toLocaleString();
+                };
                 
-                if (data && data.length > 0) {
-                    const coin = data[0];
-                    
-                    // Formatting numbers for a friendly display
-                    const formatPrice = (num) => {
-                        if (typeof num !== 'number') return 'Error';
-                        return "$" + num.toFixed(8);
-                    };
+                const formatPercentage = (num) => {
+                    const value = parseFloat(num);
+                    if (isNaN(value)) return '0.00%';
+                    return (value > 0 ? '+' : '') + value.toFixed(2) + "%";
+                };
 
-                    const formatLargeNumber = (num) => {
-                        if (typeof num !== 'number') return 'Error';
-                        return "$" + Math.round(num).toLocaleString();
-                    };
-                    
-                    const formatPercentage = (num) => {
-                        if (typeof num !== 'number') return '0.00%';
-                        const value = num.toFixed(2);
-                        return (num > 0 ? '+' : '') + value + "%";
-                    };
-                    
-                    // Update UI with formatted values
-                    const elements = {
-                        'currentPrice': [coin.current_price, formatPrice],
-                        'change24h': [coin.price_change_percentage_24h, formatPercentage],
-                        'volume24h': [coin.total_volume, formatLargeNumber],
-                        'marketCap': [coin.market_cap, formatLargeNumber],
-                        'marketRank': [coin.market_cap_rank, (rank) => `#${rank || 'N/A'}`],
-                        'lastUpdate': [new Date(coin.last_updated), (date) => {
-                            const pad = (n) => n < 10 ? '0' + n : n;
-                            return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-                        }]
-                    };
+                // Calculate market cap (approximate)
+                const totalSupply = 589350527692307; // SHIB total supply
+                const marketCap = parseFloat(priceData.price) * totalSupply;
+                
+                // Update UI with formatted values
+                const elements = {
+                    'currentPrice': [priceData.price, formatPrice],
+                    'change24h': [dayStats.priceChangePercent, formatPercentage],
+                    'volume24h': [dayStats.volume * parseFloat(priceData.price), formatLargeNumber],
+                    'marketCap': [marketCap, formatLargeNumber],
+                    'marketRank': ["N/A", (rank) => rank], // Binance doesn't provide rank
+                    'lastUpdate': [new Date(), (date) => {
+                        const pad = (n) => n < 10 ? '0' + n : n;
+                        return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                    }]
+                };
 
-                    // Update all elements and add highlight animation
-                    for (const [id, [value, formatter]] of Object.entries(elements)) {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            const newValue = formatter(value);
-                            if (element.innerText !== newValue) {
-                                element.innerText = newValue;
-                                element.parentElement.classList.remove('highlight');
-                                void element.parentElement.offsetWidth; // Trigger reflow
-                                element.parentElement.classList.add('highlight');
-                            }
+                // Update all elements and add highlight animation
+                for (const [id, [value, formatter]] of Object.entries(elements)) {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        const newValue = formatter(value);
+                        if (element.innerText !== newValue) {
+                            element.innerText = newValue;
+                            element.parentElement.classList.remove('highlight');
+                            void element.parentElement.offsetWidth; // Trigger reflow
+                            element.parentElement.classList.add('highlight');
                         }
                     }
-                } else {
-                    throw new Error('Invalid data format from API');
                 }
+
+                // Log successful update
+                console.log('Price data updated successfully:', priceData.price);
+
             } catch (error) {
                 console.error("Error updating ticker:", error);
                 const errorElements = ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank', 'lastUpdate'];
@@ -506,97 +532,129 @@
             return date.toLocaleDateString();
         }
 
-        // Load price history data and render/update the Chart.js line chart.
+        // Load price history data using Binance Kline/Candlestick API
         async function loadPriceHistory(range, isUpdate = false) {
-            let daysParam;
+            let interval;
+            let limit;
+            const now = Date.now();
+            let startTime;
+
             switch (range) {
                 case '1h':
-                    daysParam = '0.04167'; // 1 hour in days
+                    interval = '1m';
+                    limit = 60;
+                    startTime = now - 3600000; // 1 hour ago
                     break;
                 case '24h':
-                    daysParam = '1';
+                    interval = '15m';
+                    limit = 96;
+                    startTime = now - 86400000; // 24 hours ago
                     break;
                 case '7d':
-                    daysParam = '7';
+                    interval = '2h';
+                    limit = 84;
+                    startTime = now - 604800000; // 7 days ago
                     break;
                 case '30d':
                 default:
-                    daysParam = '30';
+                    interval = '8h';
+                    limit = 90;
+                    startTime = now - 2592000000; // 30 days ago
                     break;
             }
 
-            const url = `https://api.coingecko.com/api/v3/coins/shiba-inu/market_chart?vs_currency=usd&days=${daysParam}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=SHIBUSDT&interval=${interval}&limit=${limit}&startTime=${startTime}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
                 const data = await response.json();
-                if (data && data.prices && data.prices.length > 0) {
-                    const labels = [];
-                    const prices = [];
-                    data.prices.forEach(point => {
-                        labels.push(formatTimestamp(point[0], range));
-                        prices.push(point[1]);
-                    });
-    
-                    if (!priceChart) {
-                        // Create new chart if it doesn't exist
-                        const ctx = document.getElementById('priceChart').getContext('2d');
-                        priceChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Price (USD)',
-                                    data: prices,
-                                    fill: true,
-                                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                                    borderColor: 'rgba(52, 152, 219, 1)',
-                                    borderWidth: 2,
-                                    pointRadius: 1,
-                                }]
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('Invalid data from API');
+                }
+
+                const labels = [];
+                const prices = [];
+                data.forEach(candle => {
+                    if (candle && candle.length >= 5) {
+                        labels.push(formatTimestamp(candle[0], range));
+                        prices.push(parseFloat(candle[4])); // Using closing price
+                    }
+                });
+
+                if (prices.length === 0) {
+                    throw new Error('No valid price data');
+                }
+
+                if (!priceChart) {
+                    // Create new chart if it doesn't exist
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Price (USD)',
+                                data: prices,
+                                fill: true,
+                                backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                                borderColor: 'rgba(52, 152, 219, 1)',
+                                borderWidth: 2,
+                                pointRadius: 1,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 750
                             },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                animation: {
-                                    duration: 750
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                return 'Price: $' + context.parsed.y.toFixed(8);
-                                            }
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Price: $' + context.parsed.y.toFixed(8);
                                         }
                                     }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: 10,
+                                    }
                                 },
-                                scales: {
-                                    x: {
-                                        ticks: {
-                                            autoSkip: true,
-                                            maxTicksLimit: 10,
-                                        }
-                                    },
-                                    y: {
-                                        beginAtZero: false,
-                                        ticks: {
-                                            callback: function(value) {
-                                                return '$' + value.toFixed(8);
-                                            }
+                                y: {
+                                    beginAtZero: false,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '$' + value.toFixed(8);
                                         }
                                     }
                                 }
                             }
-                        });
-                    } else {
-                        // Update existing chart
-                        priceChart.data.labels = labels;
-                        priceChart.data.datasets[0].data = prices;
-                        priceChart.update('none');
-                    }
+                        }
+                    });
+                } else {
+                    // Update existing chart
+                    priceChart.data.labels = labels;
+                    priceChart.data.datasets[0].data = prices;
+                    priceChart.update('none');
                 }
+
+                // Log successful update
+                console.log('Chart data updated successfully with', prices.length, 'points');
+
             } catch (error) {
                 console.error("Error loading price history:", error);
                 if (priceChart) {
@@ -605,8 +663,8 @@
                 }
                 const ctx = document.getElementById('priceChart').getContext('2d');
                 ctx.font = '14px Arial';
-                ctx.fillStyle = 'red';
-                ctx.fillText('Error loading price data. Please try again later.', 10, 50);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillText('Error loading price data. Please refresh the page.', 10, 50);
             }
         }
 
@@ -709,10 +767,10 @@
         updateNews();
         
         // Update data periodically
-        // Price updates every minute, news every 10 minutes
-        setInterval(updateTicker, 60000);
-        setInterval(() => loadPriceHistory(currentRange, true), 60000);
-        setInterval(() => updateNews(), 600000); // 10 minutes = 600000 milliseconds
+        // Price updates every 10 seconds, chart every 30 seconds, news every 5 minutes
+        setInterval(updateTicker, 10000); // 10 seconds
+        setInterval(() => loadPriceHistory(currentRange, true), 30000); // 30 seconds
+        setInterval(() => updateNews(), 300000); // 5 minutes
 
         // Cookie consent functions
         function setCookie(name, value, days) {
