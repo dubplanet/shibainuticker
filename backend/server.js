@@ -10,7 +10,7 @@ const app = express();
 
 // Enable CORS for your frontend domain
 app.use(cors({
-    origin: ['https://dubplanet.github.io', 'http://localhost:3000'],
+    origin: ['https://shibainucointracker.com', 'https://dubplanet.github.io', 'http://localhost:3000'],
     methods: ['GET']
 }));
 
