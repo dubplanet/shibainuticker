@@ -199,79 +199,72 @@
 
         // Update the ticker information using CoinGecko's "coins/markets" endpoint.
         async function updateTicker() {
-            // Use the markets endpoint to get the rank information
             const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=shiba-inu&order=market_cap_desc&per_page=1&page=1&sparkline=false";
             try {
-                console.log('Fetching price data...');
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log('Received data:', data);
                 
                 if (data && data.length > 0) {
                     const coin = data[0];
-                    console.log('Shiba Inu data:', coin);
                     
                     // Formatting numbers for a friendly display
                     const formatPrice = (num) => {
-                        if (typeof num !== 'number') {
-                            console.error('Invalid price value:', num);
-                            return 'Error';
-                        }
-                        return "$" + num.toFixed(8);  // Show 8 decimal places for price
+                        if (typeof num !== 'number') return 'Error';
+                        return "$" + num.toFixed(8);
                     };
 
                     const formatLargeNumber = (num) => {
-                        if (typeof num !== 'number') {
-                            console.error('Invalid number value:', num);
-                            return 'Error';
-                        }
-                        // Format large numbers with commas and no decimal places
+                        if (typeof num !== 'number') return 'Error';
                         return "$" + Math.round(num).toLocaleString();
                     };
                     
                     const formatPercentage = (num) => {
                         if (typeof num !== 'number') return '0.00%';
-                        return num.toFixed(2) + "%";
+                        const value = num.toFixed(2);
+                        return (num > 0 ? '+' : '') + value + "%";
                     };
                     
                     // Update UI with formatted values
-                    const price = coin.current_price;
-                    console.log('Raw price:', price);
-                    
-                    document.getElementById('currentPrice').innerText = formatPrice(price);
-                    document.getElementById('change24h').innerText = formatPercentage(coin.price_change_percentage_24h || 0);
-                    document.getElementById('volume24h').innerText = formatLargeNumber(coin.total_volume || 0);
-                    document.getElementById('marketCap').innerText = formatLargeNumber(coin.market_cap || 0);
-                    document.getElementById('marketRank').innerText = `#${coin.market_cap_rank || 'N/A'}`;
-                    
-                    // Add last updated time
-                    const now = new Date(coin.last_updated || Date.now());
-                    const formatDate = (date) => {
-                        const pad = (n) => n < 10 ? '0' + n : n;
-                        const month = pad(date.getMonth() + 1);
-                        const day = pad(date.getDate());
-                        const year = date.getFullYear();
-                        const hours = pad(date.getHours());
-                        const minutes = pad(date.getMinutes());
-                        const seconds = pad(date.getSeconds());
-                        return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+                    const elements = {
+                        'currentPrice': [coin.current_price, formatPrice],
+                        'change24h': [coin.price_change_percentage_24h, formatPercentage],
+                        'volume24h': [coin.total_volume, formatLargeNumber],
+                        'marketCap': [coin.market_cap, formatLargeNumber],
+                        'marketRank': [coin.market_cap_rank, (rank) => `#${rank || 'N/A'}`],
+                        'lastUpdate': [new Date(coin.last_updated), (date) => {
+                            const pad = (n) => n < 10 ? '0' + n : n;
+                            return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                        }]
                     };
-                    document.getElementById('lastUpdate').innerText = formatDate(now);
+
+                    // Update all elements and add highlight animation
+                    for (const [id, [value, formatter]] of Object.entries(elements)) {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            const newValue = formatter(value);
+                            if (element.innerText !== newValue) {
+                                element.innerText = newValue;
+                                element.parentElement.classList.remove('highlight');
+                                void element.parentElement.offsetWidth; // Trigger reflow
+                                element.parentElement.classList.add('highlight');
+                            }
+                        }
+                    }
                 } else {
-                    console.error('Invalid API response format:', data);
                     throw new Error('Invalid data format from API');
                 }
             } catch (error) {
                 console.error("Error updating ticker:", error);
-                document.getElementById('currentPrice').innerText = "Error loading price";
-                document.getElementById('change24h').innerText = "N/A";
-                document.getElementById('volume24h').innerText = "N/A";
-                document.getElementById('marketCap').innerText = "N/A";
-                document.getElementById('marketRank').innerText = "N/A";
-                document.getElementById('lastUpdate').innerText = "Error updating data";
+                const errorElements = ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank', 'lastUpdate'];
+                errorElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerText = "Error loading data";
+                    }
+                });
             }
         }
 
@@ -284,13 +277,23 @@
 
         // Load price history data and render/update the Chart.js line chart.
         async function loadPriceHistory(range, isUpdate = false) {
-            // Only update button styles if it's not an auto-update
-            if (!isUpdate) {
-                document.getElementById('btn30days').classList.add('active');
-                currentRange = range; // Save the current selected range for auto-refresh
+            let daysParam;
+            switch (range) {
+                case '1h':
+                    daysParam = '0.04167'; // 1 hour in days
+                    break;
+                case '24h':
+                    daysParam = '1';
+                    break;
+                case '7d':
+                    daysParam = '7';
+                    break;
+                case '30d':
+                default:
+                    daysParam = '30';
+                    break;
             }
-            
-            let daysParam = "30";
+
             const url = `https://api.coingecko.com/api/v3/coins/shiba-inu/market_chart?vs_currency=usd&days=${daysParam}`;
             try {
                 const response = await fetch(url);
@@ -360,10 +363,8 @@
                         // Update existing chart
                         priceChart.data.labels = labels;
                         priceChart.data.datasets[0].data = prices;
-                        priceChart.update('none'); // Update without animation for auto-updates
+                        priceChart.update('none');
                     }
-                } else {
-                    throw new Error('No price data available');
                 }
             } catch (error) {
                 console.error("Error loading price history:", error);
@@ -371,7 +372,6 @@
                     priceChart.destroy();
                     priceChart = null;
                 }
-                // Display error message on canvas
                 const ctx = document.getElementById('priceChart').getContext('2d');
                 ctx.font = '14px Arial';
                 ctx.fillStyle = 'red';
@@ -379,41 +379,20 @@
             }
         }
 
-        // Set up event listeners for the buttons.
-        document.getElementById('btn30days').addEventListener('click', () => {
-            loadPriceHistory("30days", false);
-        });
+        function setTimeframe(timeframe) {
+            currentRange = timeframe;
+            loadPriceHistory(timeframe, false);
+        }
 
         // Initial load of ticker info and default chart view.
         updateTicker();
-        // Update ticker every 60 seconds.
-        setInterval(updateTicker, 60000);
+        loadPriceHistory('30d', false);
         
-        // Load the default chart (last 30 days) on first load.
-        loadPriceHistory(currentRange, false);
-        
-        // Auto-refresh the chart every 60 seconds using the currently selected range.
+        // Update ticker and chart every 60 seconds
         setInterval(() => {
+            updateTicker();
             loadPriceHistory(currentRange, true);
         }, 60000);
-
-        function setTimeframe(timeframe) {
-            switch (timeframe) {
-                case '1h':
-                    updateInterval = 60000;
-                    break;
-                case '24h':
-                    updateInterval = 60000;
-                    break;
-                case '7d':
-                    updateInterval = 60000;
-                    break;
-                case '30d':
-                    updateInterval = 60000;
-                    break;
-            }
-            // ... existing code ...
-        }
     </script>
 </body>
 </html> 
