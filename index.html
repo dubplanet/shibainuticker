@@ -361,6 +361,267 @@
                 justify-content: center;
             }
         }
+
+        /* Price Alert styles */
+        .alert-bell {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .alert-bell:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 32, 44, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .alert-modal h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .alert-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .alert-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .alert-input-group label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .alert-input-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .alert-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .save-alert {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .cancel-alert {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .alert-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .alert-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-item-text {
+            color: #e2e8f0;
+        }
+
+        .delete-alert {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-alert:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        /* Portfolio Tracker styles */
+        .portfolio-button {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .portfolio-button:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .portfolio-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 32, 44, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .portfolio-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .portfolio-stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .portfolio-stat-label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .portfolio-stat-value {
+            color: #3498db;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .portfolio-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .portfolio-submit {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .portfolio-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .transaction-history {
+            margin-top: 20px;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transaction-info {
+            color: #e2e8f0;
+        }
+
+        .transaction-value {
+            color: #3498db;
+        }
+
+        .portfolio-chart-container {
+            margin-top: 20px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
@@ -374,6 +635,81 @@
             <button class="cookie-btn accept-cookies" onclick="acceptCookies()">Accept</button>
             <button class="cookie-btn decline-cookies" onclick="declineCookies()">Decline</button>
         </div>
+    </div>
+
+    <!-- Add Price Alert Bell -->
+    <div class="alert-bell" onclick="openAlertModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+    </div>
+
+    <!-- Price Alert Modal -->
+    <div class="modal-overlay" id="alertOverlay" onclick="closeAlertModal()"></div>
+    <div class="alert-modal" id="alertModal">
+        <h2>Price Alerts</h2>
+        <div class="alert-form">
+            <div class="alert-input-group">
+                <label for="alertPrice">Price Target (USD)</label>
+                <input type="number" id="alertPrice" step="0.00000001" placeholder="Enter price...">
+            </div>
+            <div class="alert-input-group">
+                <label for="alertCondition">Condition</label>
+                <select id="alertCondition" style="background: rgba(255, 255, 255, 0.1); color: #fff; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <option value="above">Above</option>
+                    <option value="below">Below</option>
+                </select>
+            </div>
+            <div class="alert-actions">
+                <button class="save-alert" onclick="saveAlert()">Save Alert</button>
+                <button class="cancel-alert" onclick="closeAlertModal()">Cancel</button>
+            </div>
+        </div>
+        <div class="alert-list" id="alertList">
+            <!-- Active alerts will be displayed here -->
+        </div>
+    </div>
+
+    <!-- Add Portfolio Button -->
+    <div class="portfolio-button" onclick="openPortfolioModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <path d="M16 2v4"></path>
+            <path d="M8 2v4"></path>
+            <path d="M3 10h18"></path>
+        </svg>
+    </div>
+
+    <!-- Portfolio Modal -->
+    <div class="portfolio-modal" id="portfolioModal">
+        <h2>Your SHIB Portfolio</h2>
+        <div class="portfolio-stats">
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Holdings</div>
+                <div class="portfolio-stat-value" id="totalHoldings">0 SHIB</div>
+            </div>
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Current Value</div>
+                <div class="portfolio-stat-value" id="currentValue">$0.00</div>
+            </div>
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Profit/Loss</div>
+                <div class="portfolio-stat-value" id="profitLoss">$0.00 (0%)</div>
+            </div>
+        </div>
+        <div class="portfolio-form">
+            <input type="number" id="shibAmount" class="portfolio-input" placeholder="Enter SHIB amount">
+            <input type="number" id="purchasePrice" class="portfolio-input" placeholder="Purchase price (USD)">
+            <button class="portfolio-submit" onclick="addTransaction()">Add</button>
+        </div>
+        <div class="portfolio-chart-container">
+            <canvas id="portfolioChart"></canvas>
+        </div>
+        <div class="transaction-history" id="transactionHistory">
+            <!-- Transactions will be listed here -->
+        </div>
+        <button class="cancel-alert" onclick="closePortfolioModal()" style="width: 100%; margin-top: 20px;">Close</button>
     </div>
 
     <div id="container">
@@ -809,6 +1145,235 @@
                 }, 1000);
             }
         });
+
+        // Price Alerts System
+        let priceAlerts = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
+
+        function openAlertModal() {
+            document.getElementById('alertModal').style.display = 'block';
+            document.getElementById('alertOverlay').style.display = 'block';
+            renderAlertList();
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').style.display = 'none';
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        function saveAlert() {
+            const price = parseFloat(document.getElementById('alertPrice').value);
+            const condition = document.getElementById('alertCondition').value;
+            
+            if (!price || isNaN(price)) {
+                alert('Please enter a valid price');
+                return;
+            }
+
+            const alert = {
+                id: Date.now(),
+                price,
+                condition,
+                triggered: false
+            };
+
+            priceAlerts.push(alert);
+            localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+            
+            document.getElementById('alertPrice').value = '';
+            renderAlertList();
+            
+            // Request notification permission
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+            }
+        }
+
+        function deleteAlert(id) {
+            priceAlerts = priceAlerts.filter(alert => alert.id !== id);
+            localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+            renderAlertList();
+        }
+
+        function renderAlertList() {
+            const alertList = document.getElementById('alertList');
+            alertList.innerHTML = priceAlerts
+                .filter(alert => !alert.triggered)
+                .map(alert => `
+                    <div class="alert-item">
+                        <span class="alert-item-text">Alert when price is ${alert.condition} $${alert.price}</span>
+                        <button class="delete-alert" onclick="deleteAlert(${alert.id})">Delete</button>
+                    </div>
+                `).join('');
+        }
+
+        // Modify updateTicker to check price alerts
+        const originalUpdateTicker = updateTicker;
+        updateTicker = async function() {
+            await originalUpdateTicker();
+            
+            try {
+                const currentPrice = parseFloat(document.getElementById('currentPrice').innerText.replace('$', ''));
+                
+                priceAlerts.forEach(alert => {
+                    if (alert.triggered) return;
+
+                    const alertTriggered = 
+                        (alert.condition === 'above' && currentPrice > alert.price) ||
+                        (alert.condition === 'below' && currentPrice < alert.price);
+
+                    if (alertTriggered) {
+                        alert.triggered = true;
+                        
+                        // Show notification
+                        if (Notification.permission === 'granted') {
+                            new Notification('SHIB Price Alert', {
+                                body: `Price is now ${alert.condition} $${alert.price}`,
+                                icon: 'sh2805sbdb-shiba-inu-logo-shiba-inu-shib-icon-png-and-svg-vector-free-download.png'
+                            });
+                        }
+                    }
+                });
+
+                // Update localStorage and re-render list
+                localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+                if (document.getElementById('alertModal').style.display === 'block') {
+                    renderAlertList();
+                }
+            } catch (error) {
+                console.error('Error checking price alerts:', error);
+            }
+        };
+
+        // Initialize alerts system
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+
+        // Portfolio Tracker System
+        let transactions = JSON.parse(localStorage.getItem('shibTransactions') || '[]');
+        let portfolioChart = null;
+
+        function openPortfolioModal() {
+            document.getElementById('portfolioModal').style.display = 'block';
+            document.getElementById('alertOverlay').style.display = 'block';
+            updatePortfolioStats();
+            renderTransactions();
+            updatePortfolioChart();
+        }
+
+        function closePortfolioModal() {
+            document.getElementById('portfolioModal').style.display = 'none';
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        function addTransaction() {
+            const amount = parseFloat(document.getElementById('shibAmount').value);
+            const price = parseFloat(document.getElementById('purchasePrice').value);
+            
+            if (!amount || !price || isNaN(amount) || isNaN(price)) {
+                alert('Please enter valid values');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now(),
+                amount,
+                price,
+                date: new Date().toISOString(),
+                value: amount * price
+            };
+
+            transactions.push(transaction);
+            localStorage.setItem('shibTransactions', JSON.stringify(transactions));
+            
+            document.getElementById('shibAmount').value = '';
+            document.getElementById('purchasePrice').value = '';
+            
+            updatePortfolioStats();
+            renderTransactions();
+            updatePortfolioChart();
+        }
+
+        function updatePortfolioStats() {
+            const currentPrice = parseFloat(document.getElementById('currentPrice').innerText.replace('$', ''));
+            
+            const totalHoldings = transactions.reduce((sum, t) => sum + t.amount, 0);
+            const totalInvested = transactions.reduce((sum, t) => sum + t.value, 0);
+            const currentValue = totalHoldings * currentPrice;
+            const profitLoss = currentValue - totalInvested;
+            const profitLossPercentage = totalInvested > 0 ? (profitLoss / totalInvested) * 100 : 0;
+
+            document.getElementById('totalHoldings').innerText = `${totalHoldings.toLocaleString()} SHIB`;
+            document.getElementById('currentValue').innerText = `$${currentValue.toFixed(2)}`;
+            document.getElementById('profitLoss').innerText = 
+                `$${profitLoss.toFixed(2)} (${profitLossPercentage.toFixed(2)}%)`;
+            document.getElementById('profitLoss').style.color = 
+                profitLoss >= 0 ? '#2ecc71' : '#e74c3c';
+        }
+
+        function renderTransactions() {
+            const history = document.getElementById('transactionHistory');
+            history.innerHTML = transactions.map(t => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        ${new Date(t.date).toLocaleDateString()} - ${t.amount.toLocaleString()} SHIB
+                    </div>
+                    <div class="transaction-value">
+                        $${t.value.toFixed(2)} @ $${t.price.toFixed(8)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePortfolioChart() {
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+
+            const dates = transactions.map(t => new Date(t.date).toLocaleDateString());
+            const values = transactions.map(t => t.value);
+
+            portfolioChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Investment Value',
+                        data: values,
+                        fill: true,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => '$' + value.toFixed(2)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modify updateTicker to update portfolio stats
+        const originalUpdateTickerWithAlerts = updateTicker;
+        updateTicker = async function() {
+            await originalUpdateTickerWithAlerts();
+            if (document.getElementById('portfolioModal').style.display === 'block') {
+                updatePortfolioStats();
+            }
+        };
     </script>
 </body>
 </html> 
