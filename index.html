@@ -225,6 +225,58 @@
         .news-item a:hover {
             color: #2980b9;
         }
+
+        /* Refresh button styles */
+        .refresh-button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border: none;
+            color: #fff;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .refresh-button:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-button.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .refresh-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -264,6 +316,9 @@
                     <h3>Loading news...</h3>
                 </div>
             </div>
+            <button id="refresh-news" class="refresh-button" onclick="manualRefresh()">
+                Refresh News
+            </button>
         </div>
     </div>
     
@@ -464,7 +519,13 @@
         }
 
         // Function to fetch and display news
-        async function updateNews() {
+        async function updateNews(isManualRefresh = false) {
+            const refreshButton = document.getElementById('refresh-news');
+            if (isManualRefresh) {
+                refreshButton.classList.add('loading');
+                refreshButton.disabled = true;
+            }
+
             const url = 'https://min-api.cryptocompare.com/data/v2/news/?categories=Shiba%20Inu,SHIB,Cryptocurrency&excludeCategories=Sponsored';
             try {
                 const response = await fetch(url);
@@ -505,6 +566,11 @@
                         <p>Unable to fetch the latest news. Please try again later.</p>
                     </div>
                 `;
+            } finally {
+                if (isManualRefresh) {
+                    refreshButton.classList.remove('loading');
+                    refreshButton.disabled = false;
+                }
             }
         }
 
@@ -535,17 +601,21 @@
             return 'just now';
         }
 
-        // Initial load of ticker info and default chart view.
+        // Manual refresh function
+        async function manualRefresh() {
+            await updateNews(true);
+        }
+
+        // Initial load of all data
         updateTicker();
         loadPriceHistory('30d', false);
         updateNews();
         
-        // Update ticker and chart every 60 seconds
-        setInterval(() => {
-            updateTicker();
-            loadPriceHistory(currentRange, true);
-            updateNews();
-        }, 60000);
+        // Update data periodically
+        // Price updates every minute, news every 10 minutes
+        setInterval(updateTicker, 60000);
+        setInterval(() => loadPriceHistory(currentRange, true), 60000);
+        setInterval(() => updateNews(), 600000); // 10 minutes = 600000 milliseconds
     </script>
 </body>
 </html> 
