@@ -120,12 +120,21 @@
                     console.log('Shiba Inu data:', coin);
                     
                     // Formatting numbers for a friendly display
-                    const formatCurrency = (num) => {
+                    const formatPrice = (num) => {
                         if (typeof num !== 'number') {
                             console.error('Invalid price value:', num);
                             return 'Error';
                         }
-                        return "$" + num.toFixed(8);  // Always show 8 decimal places for small numbers
+                        return "$" + num.toFixed(8);  // Show 8 decimal places for price
+                    };
+
+                    const formatLargeNumber = (num) => {
+                        if (typeof num !== 'number') {
+                            console.error('Invalid number value:', num);
+                            return 'Error';
+                        }
+                        // Format large numbers with commas and no decimal places
+                        return "$" + Math.round(num).toLocaleString();
                     };
                     
                     const formatPercentage = (num) => {
@@ -137,10 +146,10 @@
                     const price = coin.usd;
                     console.log('Raw price:', price);
                     
-                    document.getElementById('currentPrice').innerText = formatCurrency(price);
+                    document.getElementById('currentPrice').innerText = formatPrice(price);
                     document.getElementById('change24h').innerText = formatPercentage(coin.usd_24h_change || 0);
-                    document.getElementById('volume24h').innerText = formatCurrency(coin.usd_24h_vol || 0);
-                    document.getElementById('marketCap').innerText = formatCurrency(coin.usd_market_cap || 0);
+                    document.getElementById('volume24h').innerText = formatLargeNumber(coin.usd_24h_vol || 0);
+                    document.getElementById('marketCap').innerText = formatLargeNumber(coin.usd_market_cap || 0);
                     
                     // Add last updated time
                     const lastUpdated = new Date().toLocaleTimeString();
