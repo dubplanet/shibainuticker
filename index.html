@@ -105,7 +105,8 @@
 
         // Update the ticker information using CoinGecko's "coins/markets" endpoint.
         async function updateTicker() {
-            const url = "https://api.coingecko.com/api/v3/simple/price?ids=shiba-inu&vs_currencies=usd&include_24hr_vol=true&include_24hr_change=true&include_market_cap=true&include_last_updated_at=true";
+            // Use the markets endpoint to get the rank information
+            const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=shiba-inu&order=market_cap_desc&per_page=1&page=1&sparkline=false";
             try {
                 console.log('Fetching price data...');
                 const response = await fetch(url);
@@ -115,8 +116,8 @@
                 const data = await response.json();
                 console.log('Received data:', data);
                 
-                if (data && data['shiba-inu']) {
-                    const coin = data['shiba-inu'];
+                if (data && data.length > 0) {
+                    const coin = data[0];
                     console.log('Shiba Inu data:', coin);
                     
                     // Formatting numbers for a friendly display
@@ -143,13 +144,14 @@
                     };
                     
                     // Update UI with formatted values
-                    const price = coin.usd;
+                    const price = coin.current_price;
                     console.log('Raw price:', price);
                     
                     document.getElementById('currentPrice').innerText = formatPrice(price);
-                    document.getElementById('change24h').innerText = formatPercentage(coin.usd_24h_change || 0);
-                    document.getElementById('volume24h').innerText = formatLargeNumber(coin.usd_24h_vol || 0);
-                    document.getElementById('marketCap').innerText = formatLargeNumber(coin.usd_market_cap || 0);
+                    document.getElementById('change24h').innerText = formatPercentage(coin.price_change_percentage_24h || 0);
+                    document.getElementById('volume24h').innerText = formatLargeNumber(coin.total_volume || 0);
+                    document.getElementById('marketCap').innerText = formatLargeNumber(coin.market_cap || 0);
+                    document.getElementById('marketRank').innerText = `#${coin.market_cap_rank || 'N/A'}`;
                     
                     // Add last updated time
                     const lastUpdated = new Date().toLocaleTimeString();
@@ -164,6 +166,7 @@
                 document.getElementById('change24h').innerText = "N/A";
                 document.getElementById('volume24h').innerText = "N/A";
                 document.getElementById('marketCap').innerText = "N/A";
+                document.getElementById('marketRank').innerText = "N/A";
                 document.getElementById('lastUpdate').innerText = "Error updating data";
             }
         }
