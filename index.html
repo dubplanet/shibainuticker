@@ -160,6 +160,71 @@
         .highlight {
             animation: highlight 1s ease-out;
         }
+
+        /* News section styles */
+        .news-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .news-section h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        .news-container {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .news-item:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .news-item h3 {
+            color: #3498db;
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .news-item p {
+            color: #e2e8f0;
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .news-item .news-meta {
+            color: #718096;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .news-item a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .news-item a:hover {
+            color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -189,6 +254,16 @@
         <!-- Chart Container -->
         <div class="chart-container">
             <canvas id="priceChart"></canvas>
+        </div>
+
+        <!-- News Section -->
+        <div class="news-section">
+            <h2>Latest News</h2>
+            <div id="news-container" class="news-container">
+                <div class="news-item">
+                    <h3>Loading news...</h3>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -388,14 +463,88 @@
             loadPriceHistory(timeframe, false);
         }
 
+        // Function to fetch and display news
+        async function updateNews() {
+            const url = 'https://min-api.cryptocompare.com/data/v2/news/?categories=Shiba%20Inu,SHIB,Cryptocurrency&excludeCategories=Sponsored';
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.Data && data.Data.length > 0) {
+                    const newsContainer = document.getElementById('news-container');
+                    newsContainer.innerHTML = ''; // Clear existing news
+                    
+                    // Display up to 6 most recent news items
+                    data.Data.slice(0, 6).forEach(news => {
+                        const newsDate = new Date(news.published_on * 1000);
+                        const timeAgo = getTimeAgo(newsDate);
+                        
+                        const newsHtml = `
+                            <div class="news-item">
+                                <h3>${news.title}</h3>
+                                <p>${news.body.length > 150 ? news.body.substring(0, 150) + '...' : news.body}</p>
+                                <div class="news-meta">
+                                    <span>${timeAgo}</span>
+                                    <a href="${news.url}" target="_blank" rel="noopener noreferrer">Read More</a>
+                                </div>
+                            </div>
+                        `;
+                        newsContainer.innerHTML += newsHtml;
+                    });
+                } else {
+                    throw new Error('No news data available');
+                }
+            } catch (error) {
+                console.error("Error updating news:", error);
+                document.getElementById('news-container').innerHTML = `
+                    <div class="news-item">
+                        <h3>Error loading news</h3>
+                        <p>Unable to fetch the latest news. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function to format time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval > 1) return interval + ' years ago';
+            if (interval === 1) return '1 year ago';
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval > 1) return interval + ' months ago';
+            if (interval === 1) return '1 month ago';
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval > 1) return interval + ' days ago';
+            if (interval === 1) return '1 day ago';
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval > 1) return interval + ' hours ago';
+            if (interval === 1) return '1 hour ago';
+            
+            interval = Math.floor(seconds / 60);
+            if (interval > 1) return interval + ' minutes ago';
+            if (interval === 1) return '1 minute ago';
+            
+            return 'just now';
+        }
+
         // Initial load of ticker info and default chart view.
         updateTicker();
         loadPriceHistory('30d', false);
+        updateNews();
         
         // Update ticker and chart every 60 seconds
         setInterval(() => {
             updateTicker();
             loadPriceHistory(currentRange, true);
+            updateNews();
         }, 60000);
     </script>
 </body>
