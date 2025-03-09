@@ -290,9 +290,92 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
+        /* Cookie consent popup styles */
+        .cookie-consent {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: rgba(26, 32, 44, 0.95);
+            padding: 20px;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            transition: bottom 0.5s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cookie-consent.show {
+            bottom: 0;
+        }
+
+        .cookie-text {
+            flex: 1;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+
+        .cookie-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .cookie-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .accept-cookies {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .decline-cookies {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .cookie-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .cookie-consent {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .cookie-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Cookie Consent Popup -->
+    <div class="cookie-consent" id="cookieConsent">
+        <div class="cookie-text">
+            This website uses cookies to enhance your experience and analyze site traffic. 
+            By clicking "Accept", you consent to our use of cookies.
+        </div>
+        <div class="cookie-buttons">
+            <button class="cookie-btn accept-cookies" onclick="acceptCookies()">Accept</button>
+            <button class="cookie-btn decline-cookies" onclick="declineCookies()">Decline</button>
+        </div>
+    </div>
+
     <div id="container">
         <img src="sh2805sbdb-shiba-inu-logo-shiba-inu-shib-icon-png-and-svg-vector-free-download.png" alt="Shiba Inu Logo" class="logo">
         <h1>Shiba Inu Coin Tracker</h1>
@@ -630,6 +713,44 @@
         setInterval(updateTicker, 60000);
         setInterval(() => loadPriceHistory(currentRange, true), 60000);
         setInterval(() => updateNews(), 600000); // 10 minutes = 600000 milliseconds
+
+        // Cookie consent functions
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function acceptCookies() {
+            setCookie('cookieConsent', 'accepted', 365); // Store consent for 1 year
+            document.getElementById('cookieConsent').classList.remove('show');
+        }
+
+        function declineCookies() {
+            setCookie('cookieConsent', 'declined', 365);
+            document.getElementById('cookieConsent').classList.remove('show');
+        }
+
+        // Check if user has already made a choice
+        window.addEventListener('load', function() {
+            if (!getCookie('cookieConsent')) {
+                // Show the popup after a short delay
+                setTimeout(() => {
+                    document.getElementById('cookieConsent').classList.add('show');
+                }, 1000);
+            }
+        });
     </script>
 </body>
 </html> 
