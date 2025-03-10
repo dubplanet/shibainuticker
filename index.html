@@ -756,223 +756,201 @@
     </div>
     
     <script>
-        // Global variable for Chart instance and current range
+        // Global variables
         let priceChart = null;
-        let currentRange = "30days";  // Default range
+        let currentRange = "24h";  // Default range
 
-        // Update the ticker information using Binance API
+        // Update the ticker information using Binance US API
         async function updateTicker() {
             try {
-                const apiUrl = window.location.hostname === 'localhost' 
-                    ? 'http://localhost:3000'
-                    : 'https://shibainuticker-production.up.railway.app';  // Railway deployment URL
-                // Get current price and 24h stats
+                console.log('Fetching data from Binance US API...');
+                
+                // Get current price and 24h stats directly from Binance US
                 const [priceResponse, dayStatsResponse] = await Promise.all([
-                    fetch(`${apiUrl}/api/price`, {
+                    fetch('https://api.binance.us/api/v3/ticker/price?symbol=SHIBUSDT', {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json'
+                        },
+                        mode: 'cors'
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Price API error: ${response.status}`);
                         }
+                        return response.json();
                     }),
-                    fetch(`${apiUrl}/api/stats`, {
+                    fetch('https://api.binance.us/api/v3/ticker/24hr?symbol=SHIBUSDT', {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json'
+                        },
+                        mode: 'cors'
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`24hr stats API error: ${response.status}`);
                         }
+                        return response.json();
                     })
                 ]);
 
-                if (!priceResponse.ok || !dayStatsResponse.ok) {
-                    throw new Error('Network response was not ok');
+                console.log('Price data:', priceResponse);
+                console.log('24h Stats:', dayStatsResponse);
+
+                if (!priceResponse.price || !dayStatsResponse.priceChangePercent) {
+                    throw new Error('Invalid data format received from API');
                 }
 
-                const priceData = await priceResponse.json();
-                const dayStats = await dayStatsResponse.json();
+                // Format price with 8 decimal places
+                const price = parseFloat(priceResponse.price).toFixed(8);
+                document.getElementById('currentPrice').innerText = '$' + price;
 
-                if (!priceData.price || !dayStats.priceChangePercent) {
-                    throw new Error('Invalid data from API');
-                }
+                // Format 24h change with +/- and 2 decimal places
+                const change = parseFloat(dayStatsResponse.priceChangePercent).toFixed(2);
+                document.getElementById('change24h').innerText = (change > 0 ? '+' : '') + change + '%';
+                document.getElementById('change24h').style.color = change >= 0 ? '#2ecc71' : '#e74c3c';
 
-                // Formatting numbers for a friendly display
-                const formatPrice = (num) => {
-                    const price = parseFloat(num);
-                    if (isNaN(price)) return 'Error';
-                    return "$" + price.toFixed(8);
-                };
+                // Format volume in USD
+                const volume = (parseFloat(dayStatsResponse.volume) * parseFloat(price)).toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0
+                });
+                document.getElementById('volume24h').innerText = volume;
 
-                const formatLargeNumber = (num) => {
-                    const value = parseFloat(num);
-                    if (isNaN(value)) return 'Error';
-                    return "$" + Math.round(value).toLocaleString();
-                };
-                
-                const formatPercentage = (num) => {
-                    const value = parseFloat(num);
-                    if (isNaN(value)) return '0.00%';
-                    return (value > 0 ? '+' : '') + value.toFixed(2) + "%";
-                };
+                // Calculate and format market cap
+                const totalSupply = 589350527692307;
+                const marketCap = (parseFloat(price) * totalSupply).toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0
+                });
+                document.getElementById('marketCap').innerText = marketCap;
 
-                // Calculate market cap (approximate)
-                const totalSupply = 589350527692307; // SHIB total supply
-                const marketCap = parseFloat(priceData.price) * totalSupply;
-                
-                // Update UI with formatted values
-                const elements = {
-                    'currentPrice': [priceData.price, formatPrice],
-                    'change24h': [dayStats.priceChangePercent, formatPercentage],
-                    'volume24h': [dayStats.volume * parseFloat(priceData.price), formatLargeNumber],
-                    'marketCap': [marketCap, formatLargeNumber],
-                    'marketRank': ["N/A", (rank) => rank], // Binance doesn't provide rank
-                    'lastUpdate': [new Date(), (date) => {
-                        const pad = (n) => n < 10 ? '0' + n : n;
-                        return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-                    }]
-                };
+                // Update last updated time
+                const now = new Date();
+                document.getElementById('lastUpdate').innerText = now.toLocaleString();
 
-                // Update all elements and add highlight animation
-                for (const [id, [value, formatter]] of Object.entries(elements)) {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        const newValue = formatter(value);
-                        if (element.innerText !== newValue) {
-                            element.innerText = newValue;
-                            element.parentElement.classList.remove('highlight');
-                            void element.parentElement.offsetWidth; // Trigger reflow
-                            element.parentElement.classList.add('highlight');
-                        }
-                    }
-                }
-
-                // Log successful update
-                console.log('Price data updated successfully:', priceData.price);
+                // Add highlight animation to updated values
+                document.querySelectorAll('#ticker div').forEach(div => {
+                    div.classList.remove('highlight');
+                    void div.offsetWidth; // Trigger reflow
+                    div.classList.add('highlight');
+                });
 
             } catch (error) {
-                console.error("Error updating ticker:", error);
-                const errorElements = ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank', 'lastUpdate'];
-                errorElements.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.innerText = "Error loading data";
-                    }
+                console.error('Error fetching data:', error);
+                const errorMessage = 'Error loading data. Please try refreshing.';
+                ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'lastUpdate'].forEach(id => {
+                    document.getElementById(id).innerText = errorMessage;
                 });
             }
         }
 
-        // Convert timestamp to a readable format.
-        function formatTimestamp(timestamp, range) {
-            const date = new Date(timestamp);
-            // Show time for 1h view, date for other views
-            if (range === '1h') {
-                const pad = (n) => n < 10 ? '0' + n : n;
-                return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-            }
-            return date.toLocaleDateString();
-        }
-
-        // Load price history data using Binance Kline/Candlestick API
-        async function loadPriceHistory(range, isUpdate = false) {
-            let interval;
-            let limit;
-            const now = Date.now();
-            let startTime;
-
-            switch (range) {
-                case '1h':
-                    interval = '1m';
-                    limit = 60;
-                    startTime = now - 3600000; // 1 hour ago
-                    break;
-                case '24h':
-                    interval = '15m';
-                    limit = 96;
-                    startTime = now - 86400000; // 24 hours ago
-                    break;
-                case '7d':
-                    interval = '2h';
-                    limit = 84;
-                    startTime = now - 604800000; // 7 days ago
-                    break;
-                case '30d':
-                default:
-                    interval = '8h';
-                    limit = 90;
-                    startTime = now - 2592000000; // 30 days ago
-                    break;
-            }
-
+        // Load price history data using Binance US Kline/Candlestick API
+        async function loadPriceHistory(range) {
             try {
-                const apiUrl = 'https://api.shibainucointracker.com';  // Replace with your actual backend URL
-                const response = await fetch(`${apiUrl}/api/klines?interval=${interval}&limit=${limit}&startTime=${startTime}`, {
+                console.log('Loading price history for range:', range);
+                
+                let interval, limit;
+                const now = Date.now();
+
+                switch (range) {
+                    case '1h':
+                        interval = '1m';
+                        limit = 60;
+                        break;
+                    case '24h':
+                        interval = '15m';
+                        limit = 96;
+                        break;
+                    case '7d':
+                        interval = '2h';
+                        limit = 84;
+                        break;
+                    default: // 30d
+                        interval = '8h';
+                        limit = 90;
+                }
+
+                const response = await fetch(`https://api.binance.us/api/v3/klines?symbol=SHIBUSDT&interval=${interval}&limit=${limit}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
-                    }
+                    },
+                    mode: 'cors'
                 });
-
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Failed to fetch price history: ${response.status}`);
                 }
 
                 const data = await response.json();
-                
+                console.log('Received klines data:', data.length, 'candles');
+
                 if (!Array.isArray(data) || data.length === 0) {
-                    throw new Error('Invalid data from API');
+                    throw new Error('Invalid price history data format');
                 }
 
-                const labels = [];
-                const prices = [];
-                data.forEach(candle => {
-                    if (candle && candle.length >= 5) {
-                        labels.push(formatTimestamp(candle[0], range));
-                        prices.push(parseFloat(candle[4])); // Using closing price
+                const chartData = data.map(candle => {
+                    if (!Array.isArray(candle) || candle.length < 5) {
+                        throw new Error('Invalid candle data format');
                     }
+                    return {
+                        x: new Date(candle[0]).toLocaleString(),
+                        y: parseFloat(candle[4]) // Closing price
+                    };
                 });
 
-                if (prices.length === 0) {
-                    throw new Error('No valid price data');
-                }
-
-                if (!priceChart) {
-                    // Create new chart if it doesn't exist
+                // Update or create chart
+                if (priceChart) {
+                    priceChart.data.labels = chartData.map(d => d.x);
+                    priceChart.data.datasets[0].data = chartData.map(d => d.y);
+                    priceChart.update();
+                } else {
                     const ctx = document.getElementById('priceChart').getContext('2d');
                     priceChart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: labels,
+                            labels: chartData.map(d => d.x),
                             datasets: [{
-                                label: 'Price (USD)',
-                                data: prices,
-                                fill: true,
-                                backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                                borderColor: 'rgba(52, 152, 219, 1)',
+                                label: 'SHIB Price (USD)',
+                                data: chartData.map(d => d.y),
+                                borderColor: '#3498db',
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
                                 borderWidth: 2,
-                                pointRadius: 1,
+                                fill: true,
+                                tension: 0.4
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            animation: {
-                                duration: 750
-                            },
                             plugins: {
+                                legend: {
+                                    display: false
+                                },
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
-                                            return 'Price: $' + context.parsed.y.toFixed(8);
+                                            return '$' + context.raw.toFixed(8);
                                         }
                                     }
                                 }
                             },
                             scales: {
                                 x: {
+                                    grid: {
+                                        display: false
+                                    },
                                     ticks: {
-                                        autoSkip: true,
-                                        maxTicksLimit: 10,
+                                        maxRotation: 45,
+                                        minRotation: 45
                                     }
                                 },
                                 y: {
-                                    beginAtZero: false,
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
                                     ticks: {
                                         callback: function(value) {
                                             return '$' + value.toFixed(8);
@@ -982,33 +960,54 @@
                             }
                         }
                     });
-                } else {
-                    // Update existing chart
-                    priceChart.data.labels = labels;
-                    priceChart.data.datasets[0].data = prices;
-                    priceChart.update('none');
                 }
 
-                // Log successful update
-                console.log('Chart data updated successfully with', prices.length, 'points');
+                console.log('Chart updated successfully');
 
             } catch (error) {
-                console.error("Error loading price history:", error);
+                console.error('Error loading price history:', error);
                 if (priceChart) {
-                    priceChart.destroy();
-                    priceChart = null;
+                    priceChart.data.labels = [];
+                    priceChart.data.datasets[0].data = [];
+                    priceChart.update();
                 }
                 const ctx = document.getElementById('priceChart').getContext('2d');
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#e2e8f0';
-                ctx.fillText('Error loading price data. Please refresh the page.', 10, 50);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#e74c3c';
+                ctx.textAlign = 'center';
+                ctx.fillText('Error loading price data. Please try refreshing.', ctx.canvas.width / 2, 50);
             }
         }
 
-        function setTimeframe(timeframe) {
-            currentRange = timeframe;
-            loadPriceHistory(timeframe, false);
+        // Initialize data and set up auto-refresh
+        function initialize() {
+            console.log('Initializing application...');
+            updateTicker();
+            loadPriceHistory(currentRange);
+            
+            // Refresh price data every 5 seconds
+            setInterval(updateTicker, 5000);
+            
+            // Refresh chart data every minute
+            setInterval(() => loadPriceHistory(currentRange), 60000);
         }
+
+        // Set timeframe for chart
+        function setTimeframe(range) {
+            currentRange = range;
+            loadPriceHistory(range);
+            
+            // Update active button state
+            document.querySelectorAll('#controls button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(range.toLowerCase())) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Start the application when the page loads
+        document.addEventListener('DOMContentLoaded', initialize);
 
         // Function to fetch and display news
         async function updateNews(isManualRefresh = false) {
@@ -1097,17 +1096,6 @@
         async function manualRefresh() {
             await updateNews(true);
         }
-
-        // Initial load of all data
-        updateTicker();
-        loadPriceHistory('30d', false);
-        updateNews();
-        
-        // Update data periodically
-        // Price updates every 10 seconds, chart every 30 seconds, news every 5 minutes
-        setInterval(updateTicker, 10000); // 10 seconds
-        setInterval(() => loadPriceHistory(currentRange, true), 30000); // 30 seconds
-        setInterval(() => updateNews(), 300000); // 5 minutes
 
         // Cookie consent functions
         function setCookie(name, value, days) {
