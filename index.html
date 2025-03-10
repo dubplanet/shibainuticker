@@ -765,119 +765,60 @@
         let lastApiCall = 0;
         const MIN_API_INTERVAL = 2000;
 
-        // API Configuration
-        const API_PROVIDERS = {
-            COINGECKO: {
-                name: 'CoinGecko',
-                enabled: true,
-                priority: 1,
-                endpoints: {
-                    price: 'https://api.coingecko.com/api/v3/coins/shiba-inu?localization=false&tickers=true&market_data=true&community_data=false&developer_data=false&sparkline=false',
-                    history: (days, interval) => `https://api.coingecko.com/api/v3/coins/shiba-inu/market_chart?vs_currency=usd&days=${days}&interval=${interval}`
-                }
-            },
-            KUCOIN: {
-                name: 'KuCoin',
-                enabled: true,
-                priority: 2,
-                endpoints: {
-                    price: 'https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=SHIB-USDT',
-                    history: (from, to) => `https://api.kucoin.com/api/v1/market/candles?type=1day&symbol=SHIB-USDT&startAt=${from}&endAt=${to}`
-                }
-            },
-            CRYPTOCOMPARE: {
-                name: 'CryptoCompare',
-                enabled: true,
-                priority: 3,
-                endpoints: {
-                    price: 'https://min-api.cryptocompare.com/data/price?fsym=SHIB&tsyms=USD',
-                    history: (limit) => `https://min-api.cryptocompare.com/data/v2/histominute?fsym=SHIB&tsym=USD&limit=${limit}`
-                }
+        // Helper function to implement rate limiting
+        async function rateLimitedFetch(url, options = {}) {
+            const now = Date.now();
+            const timeSinceLastCall = now - lastApiCall;
+            
+            if (timeSinceLastCall < MIN_API_INTERVAL) {
+                await new Promise(resolve => setTimeout(resolve, MIN_API_INTERVAL - timeSinceLastCall));
             }
-        };
-
-        let currentProvider = API_PROVIDERS.COINGECKO;
-
-        // Helper function to switch API providers
-        async function switchProvider() {
-            const availableProviders = Object.values(API_PROVIDERS)
-                .filter(p => p.enabled)
-                .sort((a, b) => a.priority - b.priority);
             
-            const currentIndex = availableProviders.findIndex(p => p === currentProvider);
-            const nextProvider = availableProviders[(currentIndex + 1) % availableProviders.length];
-            
-            console.log(`Switching from ${currentProvider.name} to ${nextProvider.name}`);
-            currentProvider = nextProvider;
-            return currentProvider;
+            lastApiCall = Date.now();
+            return fetch(url, options);
         }
 
-        // Enhanced fetch function with provider fallback
-        async function fetchWithFallback(endpoint, options = {}) {
-            let attempts = 0;
-            const maxAttempts = Object.values(API_PROVIDERS).filter(p => p.enabled).length;
+        // Helper function to get cached data or fetch new data
+        async function getCachedOrFetch(url, options = {}) {
+            const now = Date.now();
+            const cached = API_CACHE.get(url);
             
-            while (attempts < maxAttempts) {
-                try {
-                    const response = await rateLimitedFetch(endpoint, options);
-                    if (!response.ok) {
-                        throw new Error(`API error: ${response.status}`);
+            if (cached && now - cached.timestamp < CACHE_DURATION) {
+                return cached.data;
+            }
+            
+            try {
+                const response = await rateLimitedFetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait a moment.');
                     }
-                    return await response.json();
-                } catch (error) {
-                    console.error(`Error with ${currentProvider.name}:`, error);
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        await switchProvider();
-                    }
+                    throw new Error(`API error: ${response.status}`);
                 }
-            }
-            throw new Error('All API providers failed');
-        }
-
-        // Function to parse price data from different providers
-        function parsePriceData(data, provider) {
-            switch (provider.name) {
-                case 'CoinGecko':
-                    return {
-                        price: data.market_data.current_price.usd,
-                        change24h: data.market_data.price_change_percentage_24h,
-                        volume: data.market_data.total_volume.usd,
-                        marketCap: data.market_data.market_cap.usd,
-                        rank: data.market_cap_rank
-                    };
-                case 'KuCoin':
-                    return {
-                        price: parseFloat(data.data.price),
-                        change24h: null, // Need separate API call for 24h change
-                        volume: parseFloat(data.data.size || 0),
-                        marketCap: null,
-                        rank: null
-                    };
-                case 'CryptoCompare':
-                    return {
-                        price: data.USD,
-                        change24h: null, // Need separate API call for 24h change
-                        volume: null,
-                        marketCap: null,
-                        rank: null
-                    };
-                default:
-                    throw new Error('Unknown provider');
+                
+                const data = await response.json();
+                API_CACHE.set(url, { data, timestamp: now });
+                return data;
+            } catch (error) {
+                if (cached) {
+                    console.warn('Using stale cached data due to API error:', error);
+                    return cached.data;
+                }
+                throw error;
             }
         }
 
-        // Update the ticker information using multiple APIs
+        // Update the ticker information using CoinGecko API
         async function updateTicker() {
             const retryDelay = (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000);
             let attempt = 0;
             
             async function tryUpdate() {
                 try {
-                    console.log(`Fetching data from ${currentProvider.name}...`);
+                    console.log('Fetching data from CoinGecko API...');
                     
-                    const data = await fetchWithFallback(
-                        currentProvider.endpoints.price,
+                    const response = await getCachedOrFetch(
+                        'https://api.coingecko.com/api/v3/coins/shiba-inu?localization=false&tickers=true&market_data=true&community_data=false&developer_data=false&sparkline=false',
                         {
                             method: 'GET',
                             headers: {
@@ -888,13 +829,16 @@
                         }
                     );
 
-                    const priceData = parsePriceData(data, currentProvider);
-                    
-                    // Update UI with available data
+                    if (!response.market_data) {
+                        throw new Error('Invalid data format received from API');
+                    }
+
+                    // Format price with 8 decimal places
+                    const price = response.market_data.current_price.usd.toFixed(8);
                     const priceElement = document.getElementById('currentPrice');
                     const oldPrice = priceElement.innerText.replace('$', '');
-                    const price = priceData.price.toFixed(8);
-
+                    
+                    // Add visual feedback for price changes
                     if (oldPrice !== price && !isNaN(parseFloat(oldPrice))) {
                         priceElement.style.color = price > oldPrice ? '#2ecc71' : '#e74c3c';
                         setTimeout(() => {
@@ -904,35 +848,42 @@
                     
                     priceElement.innerText = '$' + price;
 
-                    // Update other fields if available
-                    if (priceData.change24h !== null) {
-                        const change = priceData.change24h.toFixed(2);
-                        document.getElementById('change24h').innerText = (change > 0 ? '+' : '') + change + '%';
+                    // Format 24h change with +/- and 2 decimal places
+                    const change = response.market_data.price_change_percentage_24h;
+                    if (change !== undefined && change !== null) {
+                        const changeFormatted = change.toFixed(2);
+                        document.getElementById('change24h').innerText = (change > 0 ? '+' : '') + changeFormatted + '%';
                         document.getElementById('change24h').style.color = change >= 0 ? '#2ecc71' : '#e74c3c';
                     }
 
-                    if (priceData.volume !== null) {
-                        document.getElementById('volume24h').innerText = priceData.volume.toLocaleString('en-US', {
+                    // Format volume in USD
+                    if (response.market_data.total_volume && response.market_data.total_volume.usd) {
+                        const volume = response.market_data.total_volume.usd.toLocaleString('en-US', {
                             style: 'currency',
                             currency: 'USD',
                             maximumFractionDigits: 0
                         });
+                        document.getElementById('volume24h').innerText = volume;
                     }
 
-                    if (priceData.marketCap !== null) {
-                        document.getElementById('marketCap').innerText = priceData.marketCap.toLocaleString('en-US', {
+                    // Get market cap
+                    if (response.market_data.market_cap && response.market_data.market_cap.usd) {
+                        const marketCap = response.market_data.market_cap.usd.toLocaleString('en-US', {
                             style: 'currency',
                             currency: 'USD',
                             maximumFractionDigits: 0
                         });
+                        document.getElementById('marketCap').innerText = marketCap;
                     }
 
-                    if (priceData.rank !== null) {
-                        document.getElementById('marketRank').innerText = `#${priceData.rank}`;
+                    // Update market rank
+                    if (response.market_cap_rank) {
+                        document.getElementById('marketRank').innerText = `#${response.market_cap_rank}`;
                     }
 
-                    // Update provider info
-                    document.getElementById('lastUpdate').innerHTML = `${new Date().toLocaleString()}<br><small style="color: #718096">via ${currentProvider.name}</small>`;
+                    // Update last updated time
+                    const now = new Date();
+                    document.getElementById('lastUpdate').innerText = now.toLocaleString();
 
                     // Visual feedback
                     document.querySelectorAll('#ticker div').forEach(div => {
@@ -946,36 +897,34 @@
 
                 } catch (error) {
                     console.error(`Error fetching data (attempt ${attempt + 1}):`, error);
-                    
                     attempt++;
-                    if (attempt < 5) {
+                    
+                    if (attempt < 3) {
                         await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
                         return tryUpdate();
                     }
                     
-                    if (attempt >= 5) {
-                        ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank'].forEach(id => {
-                            const element = document.getElementById(id);
-                            if (element) {
-                                const oldValue = element.innerText;
-                                element.innerHTML = `<span style="color: #e74c3c">⚠️</span> ${oldValue}`;
-                            }
-                        });
-                    }
+                    ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank'].forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            const oldValue = element.innerText;
+                            element.innerHTML = `<span style="color: #e74c3c">⚠️</span> ${oldValue}`;
+                        }
+                    });
                 }
             }
             
             await tryUpdate();
         }
 
-        // Load price history with multiple API support
+        // Load price history data using CoinGecko API
         async function loadPriceHistory(range) {
             const retryDelay = (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000);
             let attempt = 0;
             
             async function tryLoadHistory() {
                 try {
-                    console.log(`Loading price history from ${currentProvider.name} for range:`, range);
+                    console.log('Loading price history for range:', range);
                     
                     let days;
                     switch (range) {
@@ -987,8 +936,8 @@
                     }
 
                     const interval = range === '1h' ? 'minute' : 'hour';
-                    const data = await fetchWithFallback(
-                        currentProvider.endpoints.history(days, interval),
+                    const data = await getCachedOrFetch(
+                        `https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=${days}&interval=${interval}`,
                         {
                             method: 'GET',
                             headers: {
@@ -997,28 +946,14 @@
                         }
                     );
 
-                    // Parse historical data based on provider
-                    let chartData;
-                    switch (currentProvider.name) {
-                        case 'CoinGecko':
-                            chartData = data.prices.map(([timestamp, price]) => ({
-                                x: new Date(timestamp).toLocaleString(),
-                                y: price
-                            }));
-                            break;
-                        case 'KuCoin':
-                            chartData = data.data.map(candle => ({
-                                x: new Date(candle[0] * 1000).toLocaleString(),
-                                y: parseFloat(candle[2])
-                            }));
-                            break;
-                        case 'CryptoCompare':
-                            chartData = data.Data.Data.map(point => ({
-                                x: new Date(point.time * 1000).toLocaleString(),
-                                y: point.close
-                            }));
-                            break;
+                    if (!data.prices || !Array.isArray(data.prices)) {
+                        throw new Error('Invalid price history data format');
                     }
+
+                    const chartData = data.prices.map(([timestamp, price]) => ({
+                        x: new Date(timestamp).toLocaleString(),
+                        y: price
+                    }));
 
                     // Update chart
                     if (priceChart) {
@@ -1033,20 +968,19 @@
 
                 } catch (error) {
                     console.error(`Error loading price history (attempt ${attempt + 1}):`, error);
-                    
                     attempt++;
-                    if (attempt < 5) {
-                        await switchProvider();
+                    
+                    if (attempt < 3) {
                         await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
                         return tryLoadHistory();
                     }
                     
-                    if (attempt >= 5 && priceChart) {
+                    if (priceChart) {
                         const ctx = document.getElementById('priceChart').getContext('2d');
                         ctx.font = '16px Arial';
                         ctx.fillStyle = '#e74c3c';
                         ctx.textAlign = 'center';
-                        ctx.fillText('Temporarily unavailable. Using last available data.', ctx.canvas.width / 2, 20);
+                        ctx.fillText('Temporarily unavailable. Please try again later.', ctx.canvas.width / 2, 20);
                     }
                 }
             }
@@ -1113,32 +1047,11 @@
             updateTicker();
             loadPriceHistory(currentRange);
             
-            let updateInterval = 10000;
-            let consecutiveErrors = 0;
+            // Refresh price data every 15 seconds to avoid rate limits
+            setInterval(updateTicker, 15000);
             
-            setInterval(async () => {
-                try {
-                    await updateTicker();
-                    consecutiveErrors = 0;
-                    updateInterval = 10000;
-                } catch (error) {
-                    consecutiveErrors++;
-                    if (consecutiveErrors >= 3) {
-                        await switchProvider();
-                    }
-                    updateInterval = Math.min(30000, updateInterval * 2);
-                    console.warn(`Adjusting update interval to ${updateInterval}ms due to errors`);
-                }
-            }, updateInterval);
-            
-            setInterval(async () => {
-                try {
-                    await loadPriceHistory(currentRange);
-                } catch (error) {
-                    console.error('Failed to update chart:', error);
-                    await switchProvider();
-                }
-            }, 60000);
+            // Refresh chart data every minute
+            setInterval(() => loadPriceHistory(currentRange), 60000);
         }
 
         // Set timeframe for chart
