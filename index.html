@@ -1425,6 +1425,1436 @@
                 updatePortfolioStats();
             }
         };
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shiba Inu Coin Tracker</title>
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Basic reset and mobile-friendly styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1f2c 0%, #2d3748 100%);
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #container {
+            max-width: 800px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            display: block;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: #3498db;
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+        
+        #ticker {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #ticker div {
+            padding: 15px;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #ticker div:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        #ticker strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 1.2rem;
+            color: #3498db;
+        }
+        
+        /* Style for the control buttons */
+        #controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        #controls button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        #controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        #controls button.active {
+            background: linear-gradient(135deg, #2980b9 0%, #1f5d87 100%);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            transform: translateY(1px);
+        }
+        
+        /* Responsive canvas container */
+        .chart-container {
+            position: relative;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 400px !important;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            #container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            #ticker {
+                grid-template-columns: 1fr;
+            }
+
+            #controls button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            canvas {
+                height: 300px !important;
+            }
+        }
+
+        /* Add animation for price updates */
+        @keyframes highlight {
+            0% { background-color: rgba(52, 152, 219, 0.2); }
+            100% { background-color: rgba(255, 255, 255, 0.05); }
+        }
+
+        .highlight {
+            animation: highlight 1s ease-out;
+        }
+
+        /* News section styles */
+        .news-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .news-section h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        .news-container {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .news-item:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .news-item h3 {
+            color: #3498db;
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .news-item p {
+            color: #e2e8f0;
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .news-item .news-meta {
+            color: #718096;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .news-item a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .news-item a:hover {
+            color: #2980b9;
+        }
+
+        /* Refresh button styles */
+        .refresh-button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border: none;
+            color: #fff;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .refresh-button:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-button.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .refresh-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Cookie consent popup styles */
+        .cookie-consent {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: rgba(26, 32, 44, 0.95);
+            padding: 20px;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            transition: bottom 0.5s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cookie-consent.show {
+            bottom: 0;
+        }
+
+        .cookie-text {
+            flex: 1;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+
+        .cookie-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .cookie-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .accept-cookies {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .decline-cookies {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .cookie-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .cookie-consent {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .cookie-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Price Alert styles */
+        .alert-bell {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .alert-bell:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 32, 44, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .alert-modal h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .alert-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .alert-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .alert-input-group label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .alert-input-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .alert-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .save-alert {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .cancel-alert {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .alert-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .alert-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-item-text {
+            color: #e2e8f0;
+        }
+
+        .delete-alert {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-alert:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        /* Portfolio Tracker styles */
+        .portfolio-button {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .portfolio-button:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .portfolio-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 32, 44, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .portfolio-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .portfolio-stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .portfolio-stat-label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .portfolio-stat-value {
+            color: #3498db;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .portfolio-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .portfolio-submit {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .portfolio-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .transaction-history {
+            margin-top: 20px;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transaction-info {
+            color: #e2e8f0;
+        }
+
+        .transaction-value {
+            color: #3498db;
+        }
+
+        .portfolio-chart-container {
+            margin-top: 20px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cookie Consent Popup -->
+    <div class="cookie-consent" id="cookieConsent">
+        <div class="cookie-text">
+            This website uses cookies to enhance your experience and analyze site traffic. 
+            By clicking "Accept", you consent to our use of cookies.
+        </div>
+        <div class="cookie-buttons">
+            <button class="cookie-btn accept-cookies" onclick="acceptCookies()">Accept</button>
+            <button class="cookie-btn decline-cookies" onclick="declineCookies()">Decline</button>
+        </div>
+    </div>
+
+    <!-- Add Price Alert Bell -->
+    <div class="alert-bell" onclick="openAlertModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+    </div>
+
+    <!-- Price Alert Modal -->
+    <div class="modal-overlay" id="alertOverlay" onclick="closeAlertModal()"></div>
+    <div class="alert-modal" id="alertModal">
+        <h2>Price Alerts</h2>
+        <div class="alert-form">
+            <div class="alert-input-group">
+                <label for="alertPrice">Price Target (USD)</label>
+                <input type="number" id="alertPrice" step="0.00000001" placeholder="Enter price...">
+            </div>
+            <div class="alert-input-group">
+                <label for="alertCondition">Condition</label>
+                <select id="alertCondition" style="background: rgba(255, 255, 255, 0.1); color: #fff; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <option value="above">Above</option>
+                    <option value="below">Below</option>
+                </select>
+            </div>
+            <div class="alert-actions">
+                <button class="save-alert" onclick="saveAlert()">Save Alert</button>
+                <button class="cancel-alert" onclick="closeAlertModal()">Cancel</button>
+            </div>
+        </div>
+        <div class="alert-list" id="alertList">
+            <!-- Active alerts will be displayed here -->
+        </div>
+    </div>
+
+    <!-- Add Portfolio Button -->
+    <div class="portfolio-button" onclick="openPortfolioModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <path d="M16 2v4"></path>
+            <path d="M8 2v4"></path>
+            <path d="M3 10h18"></path>
+        </svg>
+    </div>
+
+    <!-- Portfolio Modal -->
+    <div class="portfolio-modal" id="portfolioModal">
+        <h2>Your SHIB Portfolio</h2>
+        <div class="portfolio-stats">
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Holdings</div>
+                <div class="portfolio-stat-value" id="totalHoldings">0 SHIB</div>
+            </div>
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Current Value</div>
+                <div class="portfolio-stat-value" id="currentValue">$0.00</div>
+            </div>
+            <div class="portfolio-stat">
+                <div class="portfolio-stat-label">Profit/Loss</div>
+                <div class="portfolio-stat-value" id="profitLoss">$0.00 (0%)</div>
+            </div>
+        </div>
+        <div class="portfolio-form">
+            <input type="number" id="shibAmount" class="portfolio-input" placeholder="Enter SHIB amount">
+            <input type="number" id="purchasePrice" class="portfolio-input" placeholder="Purchase price (USD)">
+            <button class="portfolio-submit" onclick="addTransaction()">Add</button>
+        </div>
+        <div class="portfolio-chart-container">
+            <canvas id="portfolioChart"></canvas>
+        </div>
+        <div class="transaction-history" id="transactionHistory">
+            <!-- Transactions will be listed here -->
+        </div>
+        <button class="cancel-alert" onclick="closePortfolioModal()" style="width: 100%; margin-top: 20px;">Close</button>
+    </div>
+
+    <div id="container">
+        <img src="sh2805sbdb-shiba-inu-logo-shiba-inu-shib-icon-png-and-svg-vector-free-download.png" alt="Shiba Inu Logo" class="logo">
+        <h1>Shiba Inu Coin Tracker</h1>
+        
+        <!-- Live Ticker Section -->
+        <div id="ticker">
+            <div>Current Price <strong id="currentPrice">Loading...</strong></div>
+            <div>24h Change <strong id="change24h">Loading...</strong></div>
+            <div>24h Volume <strong id="volume24h">Loading...</strong></div>
+            <div>Market Cap <strong id="marketCap">Loading...</strong></div>
+            <div>Market Position <strong id="marketRank">Loading...</strong></div>
+            <div>Last Updated <strong id="lastUpdate">Loading...</strong></div>
+        </div>
+        
+        <!-- Controls for selecting price history range -->
+        <div id="controls">
+            <div class="time-buttons">
+                <button onclick="setTimeframe('1h')">1 Hour</button>
+                <button onclick="setTimeframe('24h')">24 Hours</button>
+                <button onclick="setTimeframe('7d')">7 Days</button>
+                <button onclick="setTimeframe('30d')">30 Days</button>
+            </div>
+        </div>
+        
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <!-- News Section -->
+        <div class="news-section">
+            <h2>Latest News</h2>
+            <div id="news-container" class="news-container">
+                <div class="news-item">
+                    <h3>Loading news...</h3>
+                </div>
+            </div>
+            <button id="refresh-news" class="refresh-button" onclick="manualRefresh()">
+                Refresh News
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let priceChart = null;
+        let currentRange = "24h";  // Default range
+        const COINGECKO_ID = 'shiba-inu';
+        const API_CACHE = new Map();
+        const CACHE_DURATION = 5000;
+        let lastApiCall = 0;
+        const MIN_API_INTERVAL = 2000;
+
+        // Helper function to implement rate limiting
+        async function rateLimitedFetch(url, options = {}) {
+            const now = Date.now();
+            const timeSinceLastCall = now - lastApiCall;
+            
+            if (timeSinceLastCall < MIN_API_INTERVAL) {
+                await new Promise(resolve => setTimeout(resolve, MIN_API_INTERVAL - timeSinceLastCall));
+            }
+            
+            lastApiCall = Date.now();
+            return fetch(url, options);
+        }
+
+        // Helper function to get cached data or fetch new data
+        async function getCachedOrFetch(url, options = {}) {
+            const now = Date.now();
+            const cached = API_CACHE.get(url);
+            
+            if (cached && now - cached.timestamp < CACHE_DURATION) {
+                return cached.data;
+            }
+            
+            try {
+                const response = await rateLimitedFetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait a moment.');
+                    }
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                API_CACHE.set(url, { data, timestamp: now });
+                return data;
+            } catch (error) {
+                if (cached) {
+                    console.warn('Using stale cached data due to API error:', error);
+                    return cached.data;
+                }
+                throw error;
+            }
+        }
+
+        // Update the ticker information using CoinGecko API
+        async function updateTicker() {
+            const retryDelay = (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000);
+            let attempt = 0;
+            
+            async function tryUpdate() {
+                try {
+                    console.log('Fetching data from CoinGecko API...');
+                    
+                    const response = await getCachedOrFetch(
+                        'https://api.coingecko.com/api/v3/coins/shiba-inu?localization=false&tickers=true&market_data=true&community_data=false&developer_data=false&sparkline=false',
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache',
+                                'Pragma': 'no-cache'
+                            }
+                        }
+                    );
+
+                    if (!response.market_data) {
+                        throw new Error('Invalid data format received from API');
+                    }
+
+                    // Format price with 8 decimal places
+                    const price = response.market_data.current_price.usd.toFixed(8);
+                    const priceElement = document.getElementById('currentPrice');
+                    const oldPrice = priceElement.innerText.replace('$', '');
+                    
+                    // Add visual feedback for price changes
+                    if (oldPrice !== price && !isNaN(parseFloat(oldPrice))) {
+                        priceElement.style.color = price > oldPrice ? '#2ecc71' : '#e74c3c';
+                        setTimeout(() => {
+                            priceElement.style.color = '#3498db';
+                        }, 1000);
+                    }
+                    
+                    priceElement.innerText = '$' + price;
+
+                    // Format 24h change with +/- and 2 decimal places
+                    const change = response.market_data.price_change_percentage_24h;
+                    if (change !== undefined && change !== null) {
+                        const changeFormatted = change.toFixed(2);
+                        document.getElementById('change24h').innerText = (change > 0 ? '+' : '') + changeFormatted + '%';
+                        document.getElementById('change24h').style.color = change >= 0 ? '#2ecc71' : '#e74c3c';
+                    }
+
+                    // Format volume in USD
+                    if (response.market_data.total_volume && response.market_data.total_volume.usd) {
+                        const volume = response.market_data.total_volume.usd.toLocaleString('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            maximumFractionDigits: 0
+                        });
+                        document.getElementById('volume24h').innerText = volume;
+                    }
+
+                    // Get market cap
+                    if (response.market_data.market_cap && response.market_data.market_cap.usd) {
+                        const marketCap = response.market_data.market_cap.usd.toLocaleString('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            maximumFractionDigits: 0
+                        });
+                        document.getElementById('marketCap').innerText = marketCap;
+                    }
+
+                    // Update market rank
+                    if (response.market_cap_rank) {
+                        document.getElementById('marketRank').innerText = `#${response.market_cap_rank}`;
+                    }
+
+                    // Update last updated time
+                    const now = new Date();
+                    document.getElementById('lastUpdate').innerText = now.toLocaleString();
+
+                    // Visual feedback
+                    document.querySelectorAll('#ticker div').forEach(div => {
+                        div.classList.remove('highlight');
+                        void div.offsetWidth;
+                        div.classList.add('highlight');
+                    });
+
+                    attempt = 0;
+                    window.errorCount = 0;
+
+                } catch (error) {
+                    console.error(`Error fetching data (attempt ${attempt + 1}):`, error);
+                    attempt++;
+                    
+                    if (attempt < 3) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
+                        return tryUpdate();
+                    }
+                    
+                    ['currentPrice', 'change24h', 'volume24h', 'marketCap', 'marketRank'].forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            const oldValue = element.innerText;
+                            element.innerHTML = `<span style="color: #e74c3c">⚠️</span> ${oldValue}`;
+                        }
+                    });
+                }
+            }
+            
+            await tryUpdate();
+        }
+
+        // Load price history data using CoinGecko API
+        async function loadPriceHistory(range) {
+            const retryDelay = (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000);
+            let attempt = 0;
+            
+            async function tryLoadHistory() {
+                try {
+                    console.log('Loading price history for range:', range);
+                    
+                    let days;
+                    switch (range) {
+                        case '1h': days = 1; break;
+                        case '24h': days = 1; break;
+                        case '7d': days = 7; break;
+                        case '30d': days = 30; break;
+                        default: days = 1;
+                    }
+
+                    const interval = range === '1h' ? 'minute' : 'hour';
+                    const data = await getCachedOrFetch(
+                        `https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=${days}&interval=${interval}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }
+                    );
+
+                    if (!data.prices || !Array.isArray(data.prices)) {
+                        throw new Error('Invalid price history data format');
+                    }
+
+                    const chartData = data.prices.map(([timestamp, price]) => ({
+                        x: new Date(timestamp).toLocaleString(),
+                        y: price
+                    }));
+
+                    // Update chart
+                    if (priceChart) {
+                        priceChart.data.labels = chartData.map(d => d.x);
+                        priceChart.data.datasets[0].data = chartData.map(d => d.y);
+                        priceChart.update();
+                    } else {
+                        createChart(chartData);
+                    }
+
+                    attempt = 0;
+
+                } catch (error) {
+                    console.error(`Error loading price history (attempt ${attempt + 1}):`, error);
+                    attempt++;
+                    
+                    if (attempt < 3) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
+                        return tryLoadHistory();
+                    }
+                    
+                    if (priceChart) {
+                        const ctx = document.getElementById('priceChart').getContext('2d');
+                        ctx.font = '16px Arial';
+                        ctx.fillStyle = '#e74c3c';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Temporarily unavailable. Please try again later.', ctx.canvas.width / 2, 20);
+                    }
+                }
+            }
+            
+            await tryLoadHistory();
+        }
+
+        // Helper function to create chart
+        function createChart(chartData) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => d.x),
+                    datasets: [{
+                        label: 'SHIB Price (USD)',
+                        data: chartData.map(d => d.y),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.raw.toFixed(8);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(8);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize with smarter refresh logic
+        function initialize() {
+            console.log('Initializing application...');
+            updateTicker();
+            loadPriceHistory(currentRange);
+            
+            // Refresh price data every 15 seconds to avoid rate limits
+            setInterval(updateTicker, 15000);
+            
+            // Refresh chart data every minute
+            setInterval(() => loadPriceHistory(currentRange), 60000);
+        }
+
+        // Set timeframe for chart
+        function setTimeframe(range) {
+            currentRange = range;
+            loadPriceHistory(range);
+            
+            // Update active button state
+            document.querySelectorAll('#controls button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(range.toLowerCase())) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Start the application when the page loads
+        document.addEventListener('DOMContentLoaded', initialize);
+
+        // Function to fetch and display news
+        async function updateNews(isManualRefresh = false) {
+            const refreshButton = document.getElementById('refresh-news');
+            if (isManualRefresh) {
+                refreshButton.classList.add('loading');
+                refreshButton.disabled = true;
+            }
+
+            const url = 'https://min-api.cryptocompare.com/data/v2/news/?categories=Shiba%20Inu,SHIB,Cryptocurrency&excludeCategories=Sponsored';
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.Data && data.Data.length > 0) {
+                    const newsContainer = document.getElementById('news-container');
+                    newsContainer.innerHTML = ''; // Clear existing news
+                    
+                    // Display up to 6 most recent news items
+                    data.Data.slice(0, 6).forEach(news => {
+                        const newsDate = new Date(news.published_on * 1000);
+                        const timeAgo = getTimeAgo(newsDate);
+                        
+                        const newsHtml = `
+                            <div class="news-item">
+                                <h3>${news.title}</h3>
+                                <p>${news.body.length > 150 ? news.body.substring(0, 150) + '...' : news.body}</p>
+                                <div class="news-meta">
+                                    <span>${timeAgo}</span>
+                                    <a href="${news.url}" target="_blank" rel="noopener noreferrer">Read More</a>
+                                </div>
+                            </div>
+                        `;
+                        newsContainer.innerHTML += newsHtml;
+                    });
+                } else {
+                    throw new Error('No news data available');
+                }
+            } catch (error) {
+                console.error("Error updating news:", error);
+                document.getElementById('news-container').innerHTML = `
+                    <div class="news-item">
+                        <h3>Error loading news</h3>
+                        <p>Unable to fetch the latest news. Please try again later.</p>
+                    </div>
+                `;
+            } finally {
+                if (isManualRefresh) {
+                    refreshButton.classList.remove('loading');
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        // Helper function to format time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval > 1) return interval + ' years ago';
+            if (interval === 1) return '1 year ago';
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval > 1) return interval + ' months ago';
+            if (interval === 1) return '1 month ago';
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval > 1) return interval + ' days ago';
+            if (interval === 1) return '1 day ago';
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval > 1) return interval + ' hours ago';
+            if (interval === 1) return '1 hour ago';
+            
+            interval = Math.floor(seconds / 60);
+            if (interval > 1) return interval + ' minutes ago';
+            if (interval === 1) return '1 minute ago';
+            
+            return 'just now';
+        }
+
+        // Manual refresh function
+        async function manualRefresh() {
+            await updateNews(true);
+        }
+
+        // Cookie consent functions
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function acceptCookies() {
+            setCookie('cookieConsent', 'accepted', 365); // Store consent for 1 year
+            document.getElementById('cookieConsent').classList.remove('show');
+        }
+
+        function declineCookies() {
+            setCookie('cookieConsent', 'declined', 365);
+            document.getElementById('cookieConsent').classList.remove('show');
+        }
+
+        // Check if user has already made a choice
+        window.addEventListener('load', function() {
+            if (!getCookie('cookieConsent')) {
+                // Show the popup after a short delay
+                setTimeout(() => {
+                    document.getElementById('cookieConsent').classList.add('show');
+                }, 1000);
+            }
+        });
+
+        // Price Alerts System
+        let priceAlerts = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
+
+        function openAlertModal() {
+            document.getElementById('alertModal').style.display = 'block';
+            document.getElementById('alertOverlay').style.display = 'block';
+            renderAlertList();
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').style.display = 'none';
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        function saveAlert() {
+            const price = parseFloat(document.getElementById('alertPrice').value);
+            const condition = document.getElementById('alertCondition').value;
+            
+            if (!price || isNaN(price)) {
+                alert('Please enter a valid price');
+                return;
+            }
+
+            const alert = {
+                id: Date.now(),
+                price,
+                condition,
+                triggered: false
+            };
+
+            priceAlerts.push(alert);
+            localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+            
+            document.getElementById('alertPrice').value = '';
+            renderAlertList();
+            
+            // Request notification permission
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+            }
+        }
+
+        function deleteAlert(id) {
+            priceAlerts = priceAlerts.filter(alert => alert.id !== id);
+            localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+            renderAlertList();
+        }
+
+        function renderAlertList() {
+            const alertList = document.getElementById('alertList');
+            alertList.innerHTML = priceAlerts
+                .filter(alert => !alert.triggered)
+                .map(alert => `
+                    <div class="alert-item">
+                        <span class="alert-item-text">Alert when price is ${alert.condition} $${alert.price}</span>
+                        <button class="delete-alert" onclick="deleteAlert(${alert.id})">Delete</button>
+                    </div>
+                `).join('');
+        }
+
+        // Modify updateTicker to check price alerts
+        const originalUpdateTicker = updateTicker;
+        updateTicker = async function() {
+            await originalUpdateTicker();
+            
+            try {
+                const currentPrice = parseFloat(document.getElementById('currentPrice').innerText.replace('$', ''));
+                
+                priceAlerts.forEach(alert => {
+                    if (alert.triggered) return;
+
+                    const alertTriggered = 
+                        (alert.condition === 'above' && currentPrice > alert.price) ||
+                        (alert.condition === 'below' && currentPrice < alert.price);
+
+                    if (alertTriggered) {
+                        alert.triggered = true;
+                        
+                        // Show notification
+                        if (Notification.permission === 'granted') {
+                            new Notification('SHIB Price Alert', {
+                                body: `Price is now ${alert.condition} $${alert.price}`,
+                                icon: 'sh2805sbdb-shiba-inu-logo-shiba-inu-shib-icon-png-and-svg-vector-free-download.png'
+                            });
+                        }
+                    }
+                });
+
+                // Update localStorage and re-render list
+                localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+                if (document.getElementById('alertModal').style.display === 'block') {
+                    renderAlertList();
+                }
+            } catch (error) {
+                console.error('Error checking price alerts:', error);
+            }
+        };
+
+        // Initialize alerts system
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+
+        // Portfolio Tracker System
+        let transactions = JSON.parse(localStorage.getItem('shibTransactions') || '[]');
+        let portfolioChart = null;
+
+        function openPortfolioModal() {
+            document.getElementById('portfolioModal').style.display = 'block';
+            document.getElementById('alertOverlay').style.display = 'block';
+            updatePortfolioStats();
+            renderTransactions();
+            updatePortfolioChart();
+        }
+
+        function closePortfolioModal() {
+            document.getElementById('portfolioModal').style.display = 'none';
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+
+        function addTransaction() {
+            const amount = parseFloat(document.getElementById('shibAmount').value);
+            const price = parseFloat(document.getElementById('purchasePrice').value);
+            
+            if (!amount || !price || isNaN(amount) || isNaN(price)) {
+                alert('Please enter valid values');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now(),
+                amount,
+                price,
+                date: new Date().toISOString(),
+                value: amount * price
+            };
+
+            transactions.push(transaction);
+            localStorage.setItem('shibTransactions', JSON.stringify(transactions));
+            
+            document.getElementById('shibAmount').value = '';
+            document.getElementById('purchasePrice').value = '';
+            
+            updatePortfolioStats();
+            renderTransactions();
+            updatePortfolioChart();
+        }
+
+        function updatePortfolioStats() {
+            const currentPrice = parseFloat(document.getElementById('currentPrice').innerText.replace('$', ''));
+            
+            const totalHoldings = transactions.reduce((sum, t) => sum + t.amount, 0);
+            const totalInvested = transactions.reduce((sum, t) => sum + t.value, 0);
+            const currentValue = totalHoldings * currentPrice;
+            const profitLoss = currentValue - totalInvested;
+            const profitLossPercentage = totalInvested > 0 ? (profitLoss / totalInvested) * 100 : 0;
+
+            document.getElementById('totalHoldings').innerText = `${totalHoldings.toLocaleString()} SHIB`;
+            document.getElementById('currentValue').innerText = `$${currentValue.toFixed(2)}`;
+            document.getElementById('profitLoss').innerText = 
+                `$${profitLoss.toFixed(2)} (${profitLossPercentage.toFixed(2)}%)`;
+            document.getElementById('profitLoss').style.color = 
+                profitLoss >= 0 ? '#2ecc71' : '#e74c3c';
+        }
+
+        function renderTransactions() {
+            const history = document.getElementById('transactionHistory');
+            history.innerHTML = transactions.map(t => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        ${new Date(t.date).toLocaleDateString()} - ${t.amount.toLocaleString()} SHIB
+                    </div>
+                    <div class="transaction-value">
+                        $${t.value.toFixed(2)} @ $${t.price.toFixed(8)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePortfolioChart() {
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+
+            const dates = transactions.map(t => new Date(t.date).toLocaleDateString());
+            const values = transactions.map(t => t.value);
+
+            portfolioChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Investment Value',
+                        data: values,
+                        fill: true,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => '$' + value.toFixed(2)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modify updateTicker to update portfolio stats
+        const originalUpdateTickerWithAlerts = updateTicker;
+        updateTicker = async function() {
+            await originalUpdateTickerWithAlerts();
+            if (document.getElementById('portfolioModal').style.display === 'block') {
+                updatePortfolioStats();
+            }
+        };
     </script>
+</body>
+</html> 
+</script>
 </body>
 </html> 
